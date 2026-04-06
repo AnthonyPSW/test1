@@ -2,7 +2,9 @@ composer create-project laravel/laravel nombreProyecto
 php artisan make:model nombreModelo
 php artisan make:migration nombreMigracion.
 php artisan migrate                                                                 
-php artisan install:api                     
+php artisan install:api  
+php artisan make:seeder NombreSeeder
+php artisan db:seed
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -326,3 +328,141 @@ class ControllerPeliculas extends Controller
     </table>
 </body>
 </html>
+
+
+<td>
+    <select>
+        <option>Materias</option>
+        @foreach($est->materias as $mat)
+            <option>{{ $mat->NOM_MAT }}</option>
+        @endforeach
+    </select>
+</td>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+
+<form action="{{ route('estudiantes.store') }}" method="POST">
+    @csrf
+    CEDULA <input type="text" name="txtCedula">
+    <br>
+    NOMBRE <input type="text" name="txtNombre">
+    <br>
+    APELLIDO <input type="text" name="txtApellido">
+    <br>
+    TELEFONO <input type="text" name="txtTelefono">
+    <br>
+    DIRECCION <input type="text" name="txtDireccion">
+    <br><br>
+
+    MATERIAS
+    <select name="txtMateria">
+        <option value="">Seleccione una materia</option>
+        @foreach($materias as $mat)
+            <option value="{{ $mat->ID_MAT }}">
+                {{ $mat->NOM_MAT }}
+            </option>
+        @endforeach
+    </select>
+    <br><br>
+
+    <button type="submit">Agregar</button>
+</form>
+
+<br><br>
+
+<table border="1px">
+    <tbody>
+    @forelse($estudiantes as $est)
+        <form action="{{ route('estudiantes.update') }}" method="POST">
+            @csrf
+            @method('PUT')
+            <tr>
+                <td>
+                    <input type="text" name="txtCedula" value="{{ $est->EST_CED }}">
+                </td>
+                <td>
+                    <input type="text" name="txtNombre" value="{{ $est->EST_NOM }}">
+                </td>
+                <td>
+                    <input type="text" name="txtApellido" value="{{ $est->EST_APE }}">
+                </td>
+                <td>
+                    <input type="text" name="txtDireccion" value="{{ $est->EST_DIR }}">
+                </td>
+                <td>
+                    <input type="text" name="txtTelefono" value="{{ $est->EST_TEL }}">
+                </td>
+                <td>
+                    <select>
+                        <option>Materias</option>
+                        @foreach($est->materias as $mat)
+                            <option>{{ $mat->NOM_MAT }}</option>
+                        @endforeach
+                    </select>
+                </td>
+                <td>
+                    <button type="submit">ACTUALIZAR</button>
+                </td>
+            </tr>
+        </form>
+    @empty
+    @endforelse
+    </tbody>
+</table>
+
+</body>
+</html>
+
+public function index(Request $request)
+{
+    $estudiantes = Estudiante::query()
+        ->when($request->filled('searchCedula'), function ($query) use ($request) {
+            $query->where('EST_CED', 'like', '%' . $request->searchCedula . '%');
+        })
+        ->when($request->filled('searchNombre'), function ($query) use ($request) {
+            $query->where('EST_NOM', 'like', '%' . $request->searchNombre . '%');
+        })
+        ->when($request->filled('searchApellido'), function ($query) use ($request) {
+            $query->where('EST_APE', 'like', '%' . $request->searchApellido . '%');
+        })
+        ->get();
+
+    $materias = Materia::all();
+
+    return view('estudiantes', compact('estudiantes', 'materias'));
+}
+
+<form action="{{ route('index') }}" method="GET">
+    <input type="text" name="searchCedula" placeholder="Buscar cédula" value="{{ request('searchCedula') }}">
+    <input type="text" name="searchNombre" placeholder="Buscar nombre" value="{{ request('searchNombre') }}">
+    <input type="text" name="searchApellido" placeholder="Buscar apellido" value="{{ request('searchApellido') }}">
+
+    <button type="submit">Buscar</button>
+    <a href="{{ route('index') }}">Limpiar</a>
+</form>
+
+<form action="{{ route('index') }}" method="GET">
+    <input type="text" name="searchCedula" placeholder="Buscar cédula" value="{{ request('searchCedula') }}">
+    <input type="text" name="searchNombre" placeholder="Buscar nombre" value="{{ request('searchNombre') }}">
+    <input type="text" name="searchApellido" placeholder="Buscar apellido" value="{{ request('searchApellido') }}">
+
+    <select name="searchMateria">
+        <option value="">Todas las materias</option>
+        @foreach($materias as $mat)
+            <option value="{{ $mat->ID_MAT }}" {{ request('searchMateria') == $mat->ID_MAT ? 'selected' : '' }}>
+                {{ $mat->NOM_MAT }}
+            </option>
+        @endforeach
+    </select>
+
+    <button type="submit">Buscar</button>
+    <a href="{{ route('index') }}">Limpiar</a>
+</form>
