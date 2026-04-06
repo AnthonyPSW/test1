@@ -1,0 +1,324 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ asset('styles.css') }}">
+    <title>Genero</title>
+</head>
+<body>
+<div class="GENEROS">
+<form action="{{ route('genero.store') }}" method="post">
+    @csrf
+    <input type="text" name="txtNombreGen" placeholder="Nombre">
+    <input type="text" name="txtDescrGen" placeholder="Descripción">
+    <button type="submit">Agregar</button>
+</form>
+
+<br>
+<table border="1">
+    <thead>
+        <tr>
+            <th>Numero</th>
+            <th>Nombre</th>
+            <th>Descripcion</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @forelse($generos as $gen)
+            <tr>
+                <form action="{{ route('genero.update', $gen->ID_GEN) }}" method="post">
+                    @csrf
+                    @method('PUT')
+
+                    <td>{{ $gen->ID_GEN }}</td>
+
+                    <td>
+                        <input type="text" name="txtNombre" value="{{ $gen->NOM_GEN }}">
+                    </td>
+
+                    <td>
+                        <input type="text" name="txtDescripcion" value="{{ $gen->DES_GEN }}">
+                    </td>
+
+                    <td>
+                        <button type="submit">Actualizar</button>
+                </form>
+
+                <form action="{{ route('genero.delete', $gen->ID_GEN) }}" method="post" style="display:inline;" onsubmit="return confirm('¿Está seguro de eliminar?');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit">Eliminar</button>
+                </form>
+                    </td>
+            </tr>
+        @empty
+            <tr>
+                <td colspan="4">
+                    <p style="text-align:center; padding: 20px;">No hay generos registrados.</p>
+                </td>
+            </tr>
+        @endforelse
+    </tbody>
+</table>
+</div>
+
+<div class="PELICULAS">
+<form action="{{ route('peliculas.store') }}" method="post">
+@csrf
+<input type="text" placeholder="Titulo" name="txtNombre">
+<input type="number" placeholder="Anio" name="txtAnio">
+<input type="text" placeholder="Director" name="txtDirector">
+<label>Disponible: <input type="checkbox" name="txtDisponi" value="1"></label>
+
+<select name="txtGenero">
+    <option value="">Seleccione Genero</option>
+    @foreach($generos as $gen)
+        <option value="{{ $gen->ID_GEN }}">{{ $gen->NOM_GEN }}</option>
+    @endforeach
+</select>
+
+
+<button type="submit" >Agregar</button>
+
+</form>
+
+<hr>
+<h3>Filtros de Búsqueda</h3>
+<form action="{{ route('peliculas.index') }}" method="GET" style="margin-bottom: 20px;">
+    <input type="text" name="buscar_titulo" placeholder="Buscar por Título..." value="{{ request('buscar_titulo') }}">
+    <input type="text" name="buscar_director" placeholder="Buscar por Director..." value="{{ request('buscar_director') }}">
+    
+    <select name="buscar_genero">
+        <option value="">Todos los Géneros</option>
+        @foreach($generos as $gen)
+            <option value="{{ $gen->ID_GEN }}" {{ request('buscar_genero') == $gen->ID_GEN ? 'selected' : '' }}>
+                {{ $gen->NOM_GEN }}
+            </option>
+        @endforeach
+    </select>
+
+    <button type="submit">Buscar</button>
+    <a href="{{ route('peliculas.index') }}"><button type="button">Limpiar Filtros</button></a>
+</form>
+
+<table border=1px>
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Titulo</th>
+            <th>Anio</th>
+            <th>Director</th>
+            <th>Disponible</th>
+            <th>Genero</th>
+            <th>Acciones</th>
+        </tr>
+        <tbody>
+            @forelse($peliculas as $pel)
+            <tr>
+                <form action="{{ route('peliculas.update', $pel->ID_PEL) }}" method="post">
+                    @csrf
+                    @method('PUT')
+                    <td>{{ $pel->ID_PEL }}</td>
+                    <td><input type="text" name="txtNombre" value="{{ $pel->TIT_PEL }}"></td>
+                    <td><input type="number" name="txtAnio" value="{{ $pel->ANIO_PEL }}"></td>
+                    <td><input type="text" name="txtDirector" value="{{ $pel->DIR_PEL }}"></td>
+                    <td><input type="checkbox" name="txtDisponi" value="1" {{ $pel->DIS_PEL ? 'checked' : '' }}></td>
+                    <td>
+                        <select name="txtGenero">
+                            <option value="">Seleccione Genero</option>
+                            @foreach($generos as $gen)
+                                <option value="{{ $gen->ID_GEN }}" {{ $pel->ID_GEN_PER == $gen->ID_GEN ? 'selected' : '' }}>{{ $gen->NOM_GEN }}</option>
+                            @endforeach
+                        </select>
+                    </td>
+                    <td>
+                        <button type="submit">Actualizar</button>
+                </form>
+                <form action="{{ route('peliculas.destroy', $pel->ID_PEL) }}" method="post" style="display:inline;" onsubmit="return confirm('¿Está seguro de eliminar?');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit">Eliminar</button>
+                </form>
+                    </td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="7">
+                    <p>No hay Peliculas</p>
+                </td>
+
+            </tr>
+            @endforelse
+        </tbody>
+
+    </thead>
+</table>
+</div>
+
+
+
+</body>
+</html>
+
+<?php
+
+namespace App\Http\Controllers;
+use App\Models\Peliculas;
+use App\Models\Genero;
+use Illuminate\Http\Request;
+
+class ControllerPeliculas extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        $generos = Genero::all();
+        
+        $query = Peliculas::query();
+
+        if ($request->filled('buscar_titulo')) {
+            $query->where('TIT_PEL', 'like', '%' . $request->buscar_titulo . '%');
+        }
+
+        if ($request->filled('buscar_director')) {
+            $query->where('DIR_PEL', 'like', '%' . $request->buscar_director . '%');
+        }
+
+        if ($request->filled('buscar_genero')) {
+            $query->where('ID_GEN_PER', $request->buscar_genero);
+        }
+
+        $peliculas = $query->get();
+
+        return view('index', compact('generos', 'peliculas'));
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $data=Peliculas::create([
+            "TIT_PEL"=>$request->txtNombre,
+            "ANIO_PEL"=>$request->txtAnio,
+            "DIR_PEL"=>$request->txtDirector,
+            "DIS_PEL"=>$request->txtDisponi,
+            "ID_GEN_PER"=>$request->txtGenero
+        ]);
+        return redirect()->route('peliculas.index');
+        
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        $pelicula = Peliculas::where('ID_PEL', $id)->firstOrFail();
+        $pelicula->update([
+            "TIT_PEL"=>$request->txtNombre,
+            "ANIO_PEL"=>$request->txtAnio,
+            "DIR_PEL"=>$request->txtDirector,
+            "DIS_PEL"=>$request->has('txtDisponi') ? 1 : 0,
+            "ID_GEN_PER"=>$request->txtGenero
+        ]);
+        return redirect()->route('peliculas.index');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $idPel)
+    {
+        $pelicula=Peliculas::where('ID_PEL', $idPel)->firstOrFail();
+        $pelicula->delete();
+        return redirect()->route('peliculas.index');
+        //
+    }
+}
+ public function index(Request $request)
+    {
+        if ($request->has('searchNombre') && $request->searchNombre != '') {
+            $data = Team::where('NOM_TEA', 'like', '%' . $request->searchNombre . '%')->get();
+        } else {
+            // Caso contrario, traemos todos los estudiantes
+            $data = Team::all();
+        }
+        return view('index', compact('data'));
+    }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>SECCION 1</h1>
+
+    <form action="{{ route('teams.store') }}" method="POST">
+        @csrf
+        <input type="text" name="txtNombre">
+        <input type="text" name="txtPais">
+        <input type="number" name="txtIntegrantes">
+        <label>Disponible: <input type="checkbox" name="txtEstado" value="1"></label>
+        <input type="number" name="txtGame">
+
+        <button type="submit">Agregar</button>
+    </form>
+
+    <br>
+    <br>
+
+    <form action="{{ route('teams.index') }}" method="GET">
+        <input type="text" value="{{ request('searchNombre') }}" name="searchNombre">
+        <button type="submit">Buscar</button>
+    </form>
+
+    <a href="{{ route('teams.index' )}}">
+        Limpiar
+    </a>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Nombre</th>
+                <th>Pais</th>
+                <th>Num Integrantes</th>
+                <th>Estado</th>
+                <th>Id Game</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($data as $dat)
+                <tr>
+                    <td>{{ $dat->ID_TEA }}</td>
+                    <td>{{ $dat->NOM_TEA }}</td>
+                    <td>{{ $dat->PAI_TEA }}</td>
+                    <td>{{ $dat->NUM_INT_TEA }}</td>
+                    <td>{{ $dat->EST_TEA }}</td>
+                    <td>{{ $dat->ID_GAM_PER }}</td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="6">No hay</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+</body>
+</html>
