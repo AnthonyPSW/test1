@@ -1,4 +1,8 @@
-
+composer create-project laravel/laravel nombreProyecto
+php artisan make:model nombreModelo
+php artisan make:migration nombreMigracion.
+php artisan migrate                                                                 
+php artisan install:api                     
 <!DOCTYPE html>
 <html lang="en">
 <head>
