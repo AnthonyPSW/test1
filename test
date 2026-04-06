@@ -1,3 +1,5 @@
+israelpsw
+Anthony2025
 composer create-project laravel/laravel nombreProyecto
 php artisan make:model nombreModelo
 php artisan make:migration nombreMigracion.
