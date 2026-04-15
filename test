@@ -1,336 +1,127 @@
-israelpsw
-Anthony2025
-composer create-project laravel/laravel nombreProyecto
-php artisan make:model nombreModelo
-php artisan make:migration nombreMigracion.
-php artisan migrate                                                                 
-php artisan install:api  
-php artisan make:seeder NombreSeeder
-php artisan db:seed
-<?php
-
-namespace App\Http\Controllers;
-
-use App\Models\Estudiante;
-use Illuminate\Http\Request;
-use App\Models\Materia;
-
-class EstudianteController extends Controller
-{
-    public function index(Request $request)
-    {
-        $query = Estudiante::query();
-        $materias = Materia::all();
-
-        if ($request->filled('SearchNombre')) {
-            $query->where('EST_NOM', $request->SearchNombre);
+   
+    public static String getPacientes() {
+        try {
+            URL url = new URL("http://127.0.0.1:8000/api/paciente");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(conn.getInputStream(), "UTF-8")
+            );
+            StringBuilder response = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
+            }
+            reader.close();
+            return response.toString();
+        } catch (Exception ex) {
+            return null;
         }
-
-        if ($request->filled('SearchCedula')) {
-            $query->where('EST_CED', $request->SearchCedula);
-        }
-
-        $estudiantes = $query->get();
-
-        return view('estudiantes', compact('estudiantes', 'materias'));
     }
-
-    public function store(Request $request)
-    {
-        $request->validate([
-            'txtCedula' => 'required|string|max:10|unique:Estudiantes,EST_CED',
-            'txtNombre' => 'required|string|max:100',
-            'txtApellido' => 'required|string|max:100',
-            'txtDireccion' => 'required|string|max:200',
-            'txtTelefono' => 'required|string|max:15',
-        ]);
-
-        Estudiante::create([
-            'EST_CED' => $request->txtCedula,
-            'EST_NOM' => $request->txtNombre,
-            'EST_APE' => $request->txtApellido,
-            'EST_DIR' => $request->txtDireccion,
-            'EST_TEL' => $request->txtTelefono
-        ]);
-
-        return redirect()->route('index')->with('success', 'Estudiante agregado correctamente');
-    }
-
-    public function update(Request $request)
-    {
-        $request->validate([
-            'txtCedula' => 'required|string|max:10',
-            'txtNombre' => 'required|string|max:100',
-            'txtApellido' => 'required|string|max:100',
-            'txtDireccion' => 'required|string|max:200',
-            'txtTelefono' => 'required|string|max:15',
-        ]);
-
-        $estudiante = Estudiante::findOrFail($request->txtCedula);
-
-        $estudiante->update([
-            'EST_CED' => $request->txtCedula,
-            'EST_NOM' => $request->txtNombre,
-            'EST_APE' => $request->txtApellido,
-            'EST_DIR' => $request->txtDireccion,
-            'EST_TEL' => $request->txtTelefono
-        ]);
-
-        return redirect()->route('index')->with('success', 'Estudiante actualizado correctamente');
-    }
-
-    public function destroy(Request $request)
-    {
-        $estudiante = Estudiante::findOrFail($request->txtCedula);
-
-        if (Materia::where('ID_EST_INS', $request->txtCedula)->exists()) {
-            return redirect()->route('index')
-                ->with('error', 'No se puede eliminar el estudiante porque tiene materias asociadas.');
-        }
-
-        $estudiante->delete();
-
-        return redirect()->route('index')->with('success', 'Estudiante eliminado correctamente');
-    }
-}
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="{{asset('style.css')}}">
-</head>
-
-<body>
-    <div class="contenedor-principal">
-        <div class="Filtros">
-
-            <form action="{{ route('index') }}" method="GET">
-                <input type="text" name="SearchNombre" placeholder="Buscar por Nombre..."
-                    value="{{ request('SearchNombre')}}">
-                <input type="text" name="SearchCedula" placeholder="Buscar por Cedula..."
-                    value="{{ request('SearchCedula')}}">
-                <a href="{{route('index')}}"> Limpiar </a>
-                <button type="submit">BUSCAR</button>
-            </form>
-
-        </div>
-
-
-        <div class="formulario">
-            <form action="{{request('edit') ? route('estudiantes.update') : route('estudiantes.store')}}" method="POST">
-                @csrf
-                @if(request('edit'))
-                    @method('PUT')
-                @endif
-                CEDULA
-                <input type="text" name="txtCedula" value="{{ request('txtCedula') }}">
-                <br>
-                Nombre
-                <input type="text" name="txtNombre" value="{{request('txtNombre')}}">
-                <br>
-                Apellido
-                <input type="text" name="txtApellido" value="{{request('txtApellido')}}">
-                <br>
-                TELEFONO
-                <input type="text" name="txtDireccion" value="{{request('txtDireccion')}}">
-                <br>
-                Direccion
-                <input type="text" name="txtTelefono" value="{{ request('txtTelefono') }}">
-                <br>
-
-                @if(request('edit'))
-                    <button type="submit">Actualizar</button>
-                @else
-                    <button type="submit">Agregar</button>
-                @endif
-            </form>
-
-
-        </div>
-
-    </div>
-
-
-
-    <table border=1px>
-        <thead>
-            <tr>
-                <th>Cedula
-                </th>
-                <th>
-                    Nombre
-                </th>
-                <th>Apellido</th>
-                <th>Direcion</th>
-                <th>Telefono</th>
-                <th>Materias</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($estudiantes as $est)
-
-                <tr>
-                    <td>
-                        {{ $est->EST_CED }}
-
-                    </td>
-                    <td>
-                        {{$est->EST_NOM}}
-                    </td>
-                    <td>
-                        {{$est->EST_APE}}
-                    </td>
-                    <td>
-                        {{$est->EST_DIR}}
-                    </td>
-                    <td>
-                        {{$est->EST_TEL}}
-                    </td>
-                    <td>
-
-
-                    </td>
-                    <td>
-                      <a href="{{ route('index', [
-                      'edit'=>1,
-                      'txtCedula'=>$est->EST_CED ,
-                      'txtNombre'=>$est->EST_NOM,
-                      'txtApellido'=>$est->EST_APE,
-                      'txtDireccion'=>$est->EST_DIR,
-                      'txtTelefono'=>$est->EST_TEL
-                      
-                      ])  }}">Editar</a>
-                    </td>
-
-
-                    </form>
-                    <td>
-                        <form action="{{ route('estudiantes.delete')}}" method="POST">
-                            <input type="hidden" name="txtCedula" value="{{ $est->EST_CED }}">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit">Eliminar </button>
-                        </form>
-                    </td>
-
-                    </td>
-                </tr>
-
-            @empty
-
-            @endforelse
-        </tbody>
-    </table>
-
-<div class="MATERIAS">
-
-<form action="{{request('edit')?route('materia.update'):route('materia.store')}}" method="POST">
-@csrf
-@if(request('edit'))
-    @method('PUT')
-@endif
-
-<input type="hidden" name="txtID" value="{{request('txtID')}}">
-<input type="text" name="txtNombre" value="{{request('txtNombre')}}">
-<select name="txtEstudiante" >
-    @forelse($estudiantes as $es)
     
-     <option value="{{ $es->EST_CED }}"
-        {{ request('txtEstudiante') == $es->EST_CED ? 'selected' : '' }}>
+    public static String insert(Paciente p) {
+        try {
+            URL url = new URL("http://127.0.0.1:8000/api/paciente/");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            String request = "txtNombre=" + p.NOM_PAC
+                    + "&txtApellido=" + p.APE_PAC
+                    + "&txtTelefono=" + p.TEL_PAC
+                    + "&txtDireccion=" + p.DIR_PAC
+                    + "&txtEmergencia=" + p.CONT_EME_PAC;
+            
+            OutputStream os = conn.getOutputStream();
+            os.write(request.getBytes());
+            os.flush();
+            os.close();
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(conn.getInputStream(), "UTF-8"));
+            
+            String response = reader.readLine();
+            
+            return response;
+            
+        } catch (Exception ex) {
+            return null;
+        }
         
-        {{ $es->EST_NOM }} {{ $es->EST_APE }}
-        
-    </option>
-
-    @empty
-    <option value="">
-        No hay Estudiantes
-    </option>
-    @endforelse
-
-</select>
-@if(request('edit'))
-<button type="submit">Actualizar</button>
-
-@else
-<button type="submit">Agregar</button>
-
-@endif
-
-
-</form>
-
-<table border=1px>
-    <thead>
-    <tr>
-        <th>ID</th>
-        <th>Nombre</th>
-        <td>ESTUDIANTE</td>
-        <td>Acciones</td>
-    </tr>
-    </thead>
-    <tbody>
-        @forelse($materias as $mat)
-<tr>
-    <td>{{$mat->ID_MAT}}</td>
-    <td>{{$mat->NOM_MAT}}</td>
-    <td>{{$mat->Estudiantes->EST_NOM ?? 'Sin estudiantes'}}</td>
-    <td>
-       <a href="{{route('index',[
-       'edit'=>1,
-       'txtID'=>$mat->ID_MAT,
-       'txtNombre'=>$mat->NOM_MAT,
-       'txtEstudiante'=>$mat->ID_EST_INS
-       
-       ])}}">Editar</a>
-    </td>
-
-</tr>
-@empty
-@endforelse
-    </tbody>
-</table>
-</div>
-</body>
-
-</html>
-
-<?php
-
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Model;
-
-class Materia extends Model
-{
-    protected $table='Materias';
-    protected $primaryKey='ID_MAT';
-    protected $typekey='int';
-    protected $fillable=[
-        'NOM_MAT',
-        'ID_EST_INS'    ];
-    public $incrementing=false;
-    public $timestamps=false;
-
-
-    public function Estudiantes(){
-         return $this->belongsTo(Estudiante::class, 'ID_EST_INS', 'EST_CED');
     }
-}
+    
+    public static String Delete(int id) {
+        try {
+            URL url = new URL("http://127.0.0.1:8000/api/paciente/" + id);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("DELETE");
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(conn.getInputStream(), "UTF-8"));
+            String response = reader.readLine();
+            return response;
+        } catch (Exception ex) {
+            return null;
+        }
+        
+    }
+    
+    public static String Update(Paciente p) {
+        
+        try {
+            String urlStr = "http://127.0.0.1:8000/api/paciente/"
+                    + "?txtID=" + p.ID_PAC
+                    + "&txtNombre=" + p.NOM_PAC
+                    + "&txtApellido=" + p.APE_PAC
+                    + "&txtTelefono=" + p.TEL_PAC
+                    + "&txtDireccion=" + p.DIR_PAC
+                    + "&txtEmergencia=" + p.CONT_EME_PAC;
+            URL url = new URL(urlStr);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("PUT");
+                   conn.setDoOutput(true);
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(conn.getInputStream(), "UTF-8"));
+            String response=reader.readLine();
+            return response;
+        } catch (Exception ex) {
+            return null;
+        }
+    }
 
-}
- Schema::create('peliculas', function (Blueprint $table) {
-            $table->increments('ID_PEL');
-            $table->string('TIT_PEL', 150);
-            $table->integer('ANIO_PEL');
-            $table->string('DIR_PEL', 150);
-            $table->boolean('DIS_PEL');
-            $table->unsignedInteger('ID_GEN_PER');
-            $table->foreign('ID_GEN_PER')
-                ->references('ID_GEN')
-                ->on('genero');
-        }); 
+
+public void CargarTabla() {
+        String json = ApiService.getPacientes();
+        Gson gson = new Gson();
+        Paciente[] pacientes = gson.fromJson(json, Paciente[].class);
+        DefaultTableModel modelo = new DefaultTableModel();
+        String[] titulos = {"ID", "NOMBRE", "APELLIDO", "TELEFONO", "DIRECCION", "CONT. EMERGENCIA"};
+        modelo.setColumnIdentifiers(titulos);
+
+        for (Paciente p : pacientes) {
+            modelo.addRow(new Object[]{p.ID_PAC, p.NOM_PAC, p.APE_PAC, p.DIR_PAC, p.TEL_PAC, p.CONT_EME_PAC});
+        }
+        
+        jtblPacientes.setModel(modelo);
+    }
+    
+
+    public void cargar(){
+        String[] datos = {"Juan", "Maria", "Pedro"};
+        DefaultComboBoxModel<String> modelo = new DefaultComboBoxModel<>(datos);
+        jcbxOptions.setModel(modelo);
+        
+    }
+    
+
+   private void jtblPacientesMouseClicked(java.awt.event.MouseEvent evt) {                                           
+   int fila = jtblPacientes.getSelectedRow();
+        if (fila >= 0) {
+            jtxtId.setText(jtblPacientes.getValueAt(fila, 0).toString());
+            jtxtNombre.setText(jtblPacientes.getValueAt(fila, 1).toString());
+            jtxtApellido.setText(jtblPacientes.getValueAt(fila, 2).toString());
+            jtxtTelefono.setText(jtblPacientes.getValueAt(fila, 3).toString());
+            jtxtDireccion.setText(jtblPacientes.getValueAt(fila, 4).toString());
+            jtxtEmergencia.setText(jtblPacientes.getValueAt(fila, 5).toString());
+
+        }
+        
+        jtxtId.setEnabled(false);        // TODO add your handling code here:
+    }                                          
