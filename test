@@ -68,7 +68,7 @@
         try {
             String urlStr = "http://127.0.0.1:8000/api/paciente/"
                     + "?txtID=" + p.ID_PAC
-                    + "&txtNombre=" + p.NOM_PAC
+                    + "&txtNombre=" + URLEncoder.encode(p.NOM_PAC,"UTF-8")
                     + "&txtApellido=" + p.APE_PAC
                     + "&txtTelefono=" + p.TEL_PAC
                     + "&txtDireccion=" + p.DIR_PAC
