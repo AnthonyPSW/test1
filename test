@@ -1,127 +1,344 @@
-   
-    public static String getPacientes() {
+ public class ConsumirAPI2 {
+
+    private static final String API_URL = "http://localhost/SOA/PHP/Servicios/app/controllers/api.php";
+    private static final HttpClient cliente = HttpClient.newHttpClient();
+
+    public static String obtenerEstudiantes() {
         try {
-            URL url = new URL("http://127.0.0.1:8000/api/paciente");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(conn.getInputStream(), "UTF-8")
-            );
-            StringBuilder response = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                response.append(line);
+            HttpRequest peticion = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL))
+                    .GET()
+                    .build();
+            return cliente.send(peticion, HttpResponse.BodyHandlers.ofString()).body();
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    public static String buscarEstudiante(String cedula) {
+        try {
+            String url = API_URL + "?cedula=" + URLEncoder.encode(cedula, StandardCharsets.UTF_8);
+            HttpRequest peticion = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .build();
+            return cliente.send(peticion, HttpResponse.BodyHandlers.ofString()).body();
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    public static String insertarEstudiante(Estudiante es) {
+        try {
+            String body = "txtCedula=" + URLEncoder.encode(es.cedula, StandardCharsets.UTF_8)
+                    + "&txtNombre=" + URLEncoder.encode(es.nombre, StandardCharsets.UTF_8)
+                    + "&txtApellido=" + URLEncoder.encode(es.apellido, StandardCharsets.UTF_8)
+                    + "&txtTelefono=" + URLEncoder.encode(es.telefono, StandardCharsets.UTF_8)
+                    + "&txtDireccion=" + URLEncoder.encode(es.direccion, StandardCharsets.UTF_8);
+
+            HttpRequest peticion = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+            return cliente.send(peticion, HttpResponse.BodyHandlers.ofString()).body();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static String eliminarEstudiante(String cedula) {
+        try {
+            String url = API_URL + "?txtCedula=" + URLEncoder.encode(cedula, StandardCharsets.UTF_8);
+            HttpRequest peticion = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .DELETE()
+                    .build();
+            return cliente.send(peticion, HttpResponse.BodyHandlers.ofString()).body();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static String actualizarEstudiante(Estudiante es) {
+        try {
+            String params = "?txtCedula=" + URLEncoder.encode(es.cedula, StandardCharsets.UTF_8)
+                    + "&txtNombre=" + URLEncoder.encode(es.nombre, StandardCharsets.UTF_8)
+                    + "&txtApellido=" + URLEncoder.encode(es.apellido, StandardCharsets.UTF_8)
+                    + "&txtTelefono=" + URLEncoder.encode(es.telefono, StandardCharsets.UTF_8)
+                    + "&txtDireccion=" + URLEncoder.encode(es.direccion, StandardCharsets.UTF_8);
+
+            HttpRequest peticion = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL + params))
+                    .PUT(HttpRequest.BodyPublishers.noBody())
+                    .build();
+
+            return cliente.send(peticion, HttpResponse.BodyHandlers.ofString()).body();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+}
+/*
+ * EstudianteServlet2 - Usa ConsumirAPI2 (con modelo Estudiante)
+ * URL: /estudiantes2
+ */
+package Servers;
+
+import Controller.ConsumirAPI2;
+import Modelo.Estudiante;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
+import java.io.IOException;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+/**
+ *
+ * @author Antho
+ */
+@WebServlet(name = "EstudianteServlet2", urlPatterns = {"/estudiantes2"})
+public class EstudianteServlet2 extends HttpServlet {
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        String accion = request.getParameter("accion");
+
+        if (accion == null) {
+            String busqueda = request.getParameter("buscar");
+            String json;
+
+            if (busqueda != null && !busqueda.trim().isEmpty()) {
+                json = ConsumirAPI2.buscarEstudiante(busqueda.trim());
+                request.setAttribute("busqueda", busqueda.trim());
+            } else {
+                json = ConsumirAPI2.obtenerEstudiantes();
             }
-            reader.close();
-            return response.toString();
-        } catch (Exception ex) {
-            return null;
-        }
-    }
-    
-    public static String insert(Paciente p) {
-        try {
-            URL url = new URL("http://127.0.0.1:8000/api/paciente/");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
-            String request = "txtNombre=" + p.NOM_PAC
-                    + "&txtApellido=" + p.APE_PAC
-                    + "&txtTelefono=" + p.TEL_PAC
-                    + "&txtDireccion=" + p.DIR_PAC
-                    + "&txtEmergencia=" + p.CONT_EME_PAC;
-            
-            OutputStream os = conn.getOutputStream();
-            os.write(request.getBytes());
-            os.flush();
-            os.close();
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(conn.getInputStream(), "UTF-8"));
-            
-            String response = reader.readLine();
-            
-            return response;
-            
-        } catch (Exception ex) {
-            return null;
-        }
-        
-    }
-    
-    public static String Delete(int id) {
-        try {
-            URL url = new URL("http://127.0.0.1:8000/api/paciente/" + id);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("DELETE");
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(conn.getInputStream(), "UTF-8"));
-            String response = reader.readLine();
-            return response;
-        } catch (Exception ex) {
-            return null;
-        }
-        
-    }
-    
-    public static String Update(Paciente p) {
-        
-        try {
-            String urlStr = "http://127.0.0.1:8000/api/paciente/"
-                    + "?txtID=" + p.ID_PAC
-                    + "&txtNombre=" + URLEncoder.encode(p.NOM_PAC,"UTF-8")
-                    + "&txtApellido=" + p.APE_PAC
-                    + "&txtTelefono=" + p.TEL_PAC
-                    + "&txtDireccion=" + p.DIR_PAC
-                    + "&txtEmergencia=" + p.CONT_EME_PAC;
-            URL url = new URL(urlStr);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("PUT");
-                   conn.setDoOutput(true);
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(conn.getInputStream(), "UTF-8"));
-            String response=reader.readLine();
-            return response;
-        } catch (Exception ex) {
-            return null;
+
+            if (json != null && !json.isEmpty()) {
+                try {
+                    JsonArray lista = JsonParser.parseString(json).getAsJsonArray();
+                    request.setAttribute("estudiantes", lista);
+                } catch (Exception e) {
+                    request.setAttribute("error", "Error al procesar la respuesta de la API");
+                }
+            } else {
+                request.setAttribute("error", "No se pudo conectar a la API");
+            }
+
+            request.getRequestDispatcher("/estudiantes2.jsp").forward(request, response);
+
+        } else if (accion.equals("eliminar")) {
+            String cedula = request.getParameter("cedula");
+            if (cedula != null && !cedula.trim().isEmpty()) {
+                ConsumirAPI2.eliminarEstudiante(cedula.trim());
+            }
+            response.sendRedirect(request.getContextPath() + "/estudiantes2");
+            return;
+        } else {
+            response.sendRedirect(request.getContextPath() + "/estudiantes2");
+            return;
         }
     }
 
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
 
-public void CargarTabla() {
-        String json = ApiService.getPacientes();
-        Gson gson = new Gson();
-        Paciente[] pacientes = gson.fromJson(json, Paciente[].class);
-        DefaultTableModel modelo = new DefaultTableModel();
-        String[] titulos = {"ID", "NOMBRE", "APELLIDO", "TELEFONO", "DIRECCION", "CONT. EMERGENCIA"};
-        modelo.setColumnIdentifiers(titulos);
+        String accion    = request.getParameter("accion");
+        String cedula    = request.getParameter("CED_EST");
+        String nombre    = request.getParameter("NOM_EST");
+        String apellido  = request.getParameter("APE_EST");
+        String telefono  = request.getParameter("TEL_EST");
+        String direccion = request.getParameter("DIR_EST");
 
-        for (Paciente p : pacientes) {
-            modelo.addRow(new Object[]{p.ID_PAC, p.NOM_PAC, p.APE_PAC, p.DIR_PAC, p.TEL_PAC, p.CONT_EME_PAC});
+        if (cedula == null || cedula.trim().isEmpty()
+                || nombre == null || nombre.trim().isEmpty()
+                || apellido == null || apellido.trim().isEmpty()) {
+            request.setAttribute("error", "Cedula, Nombre y Apellido son obligatorios");
+            request.setAttribute("cedula", cedula);
+            request.setAttribute("nombre", nombre);
+            request.setAttribute("apellido", apellido);
+            request.setAttribute("telefono", telefono);
+            request.setAttribute("direccion", direccion);
+            if ("actualizar".equals(accion)) {
+                request.setAttribute("accionForm", "actualizar");
+            }
+            // Recargar la misma vista principal llamando a doGet
+            doGet(request, response);
+            return;
         }
-        
-        jtblPacientes.setModel(modelo);
-    }
-    
 
-    public void cargar(){
-        String[] datos = {"Juan", "Maria", "Pedro"};
-        DefaultComboBoxModel<String> modelo = new DefaultComboBoxModel<>(datos);
-        jcbxOptions.setModel(modelo);
-        
-    }
-    
+        Estudiante estudiante = new Estudiante(
+                cedula,
+                nombre,
+                apellido,
+                telefono  != null ? telefono  : "",
+                direccion != null ? direccion : ""
+        );
 
-   private void jtblPacientesMouseClicked(java.awt.event.MouseEvent evt) {                                           
-   int fila = jtblPacientes.getSelectedRow();
-        if (fila >= 0) {
-            jtxtId.setText(jtblPacientes.getValueAt(fila, 0).toString());
-            jtxtNombre.setText(jtblPacientes.getValueAt(fila, 1).toString());
-            jtxtApellido.setText(jtblPacientes.getValueAt(fila, 2).toString());
-            jtxtTelefono.setText(jtblPacientes.getValueAt(fila, 3).toString());
-            jtxtDireccion.setText(jtblPacientes.getValueAt(fila, 4).toString());
-            jtxtEmergencia.setText(jtblPacientes.getValueAt(fila, 5).toString());
-
+        if ("actualizar".equals(accion)) {
+            ConsumirAPI2.actualizarEstudiante(estudiante);
+        } else {
+            ConsumirAPI2.insertarEstudiante(estudiante);
         }
-        
-        jtxtId.setEnabled(false);        // TODO add your handling code here:
-    }                                          
+
+        response.sendRedirect(request.getContextPath() + "/estudiantes2");
+    }
+
+    @Override
+    public String getServletInfo() {
+        return "Servlet CRUD Estudiantes (con modelo Estudiante)";
+    }
+}
+<%@page import="com.google.gson.JsonArray, com.google.gson.JsonObject"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Estudiantes - Todo en uno</title>
+
+    <script>
+        function editar(cedula, nombre, apellido, telefono, direccion) {
+            document.getElementById("CED_EST").value = cedula;
+            document.getElementById("CED_EST").readOnly = true;
+            document.getElementById("NOM_EST").value = nombre;
+            document.getElementById("APE_EST").value = apellido;
+            document.getElementById("TEL_EST").value = telefono;
+            document.getElementById("DIR_EST").value = direccion;
+            document.getElementById("accion").value = "actualizar";
+            document.getElementById("btnSubmit").innerText = "Actualizar";
+            document.getElementById("btnCancel").style.display = "inline-block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelar() {
+            document.getElementById("formEstudiante").reset();
+            document.getElementById("CED_EST").readOnly = false;
+            document.getElementById("accion").value = "guardar";
+            document.getElementById("btnSubmit").innerText = "Guardar";
+            document.getElementById("btnCancel").style.display = "none";
+        }
+    </script>
+</head>
+<body>
+<div class="container">
+    <h1>Gestión de Estudiantes (Todo en uno)</h1>
+
+    <% if (request.getAttribute("error") != null) { %>
+    <div class="alert-error"><%= request.getAttribute("error") %></div>
+    <% } %>
+
+    <div class="form-container">
+        <form id="formEstudiante" action="estudiantes2" method="POST">
+            <input type="hidden" name="accion" id="accion" value="guardar">
+            <input type="text" name="CED_EST" id="CED_EST" placeholder="Cédula" required 
+                   value="<%= request.getAttribute("cedula") != null ? request.getAttribute("cedula") : "" %>"
+                   <%= request.getAttribute("cedula") != null ? "readonly" : "" %>>
+            <input type="text" name="NOM_EST" id="NOM_EST" placeholder="Nombre" required
+                   value="<%= request.getAttribute("nombre") != null ? request.getAttribute("nombre") : "" %>">
+            <input type="text" name="APE_EST" id="APE_EST" placeholder="Apellido" required
+                   value="<%= request.getAttribute("apellido") != null ? request.getAttribute("apellido") : "" %>">
+            <input type="text" name="TEL_EST" id="TEL_EST" placeholder="Teléfono"
+                   value="<%= request.getAttribute("telefono") != null ? request.getAttribute("telefono") : "" %>">
+            <input type="text" name="DIR_EST" id="DIR_EST" placeholder="Dirección"
+                   value="<%= request.getAttribute("direccion") != null ? request.getAttribute("direccion") : "" %>">
+            <button type="submit" id="btnSubmit" class="btn-submit">Guardar</button>
+            <button type="button" id="btnCancel" class="btn-cancel" style="<%= request.getAttribute("cedula") != null ? "display:inline-block;" : "display:none;" %>" onclick="cancelar()">Cancelar</button>
+        </form>
+        <% if (request.getAttribute("accionForm") != null && "actualizar".equals(request.getAttribute("accionForm"))) { %>
+        <script>
+            document.getElementById("accion").value = "actualizar";
+            document.getElementById("btnSubmit").innerText = "Actualizar";
+            document.getElementById("btnCancel").style.display = "inline-block";
+        </script>
+        <% } %>
+    </div>
+
+    <div class="toolbar">
+        <form class="search-form" action="estudiantes2" method="GET">
+            <input type="text" name="buscar"
+                   placeholder="Buscar por cédula..."
+                   value="<%= request.getAttribute("busqueda") != null ? request.getAttribute("busqueda") : "" %>">
+            <button type="submit">Buscar</button>
+            <% if (request.getAttribute("busqueda") != null) { %>
+            <a href="estudiantes2" class="btn-clear">Limpiar</a>
+            <% } %>
+        </form>
+    </div>
+
+    <% if (request.getAttribute("busqueda") != null) { %>
+    <div class="info-busqueda">
+        Resultados para: <strong><%= request.getAttribute("busqueda") %></strong>
+    </div>
+    <% } %>
+
+    <%
+        JsonArray estudiantes = (JsonArray) request.getAttribute("estudiantes");
+    %>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Cédula</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Teléfono</th>
+                <th>Dirección</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <%
+                if (estudiantes != null && estudiantes.size() > 0) {
+                    for (Object obj : estudiantes) {
+                        JsonObject elem = (JsonObject) obj;
+                        String ced = elem.get("EST_CED").getAsString();
+                        String nom = elem.get("EST_NOM").getAsString();
+                        String ape = elem.get("EST_APE").getAsString();
+                        String tel = elem.get("EST_TEL").getAsString();
+                        String dir = elem.get("EST_DIR").getAsString();
+            %>
+            <tr>
+                <td><%= ced %></td>
+                <td><%= nom %></td>
+                <td><%= ape %></td>
+                <td><%= tel %></td>
+                <td><%= dir %></td>
+                <td>
+                    <button type="button" class="btn-editar" 
+                            onclick="editar('<%= ced %>', '<%= nom %>', '<%= ape %>', '<%= tel %>', '<%= dir %>')">Editar</button>
+                    &nbsp;
+                    <a href="estudiantes2?accion=eliminar&cedula=<%= ced %>"
+                       class="btn-eliminar"
+                       onclick="return confirm('¿Eliminar al estudiante <%= ced %>?')">Eliminar</a>
+                </td>
+            </tr>
+            <%
+                    }
+                } else {
+            %>
+            <tr>
+                <td colspan="6" class="sin-datos">No hay estudiantes registrados</td>
+            </tr>
+            <%
+                }
+            %>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>     <!-- Source: https://mvnrepository.com/artifact/com.google.code.gson/gson -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.13.2</version>
+            <scope>compile</scope>
+        </dependency> 
